@@ -14,8 +14,10 @@ export default function InputBox() {
     // setData(prev =>[...prev,{role : "user", content : debouncedValue}])
     const res = await axios.post("http://localhost:3000/api/chat", {
       threadId: id,
-      message: debouncedValue,
+      message: inputText,
     });
+    console.log(res);
+    
     // setData(prev => [...prev, {role : "assistant",content : res.data.response}])
     setData((prevData)=>prevData.map((prev)=>
       prev.threadId === id?{

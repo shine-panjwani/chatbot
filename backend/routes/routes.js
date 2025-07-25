@@ -1,7 +1,52 @@
 import express from "express";
 import { getAiGeneratedMessage } from "../utils/openAI.js";
-import Thread from "../models/ChatSchema.js";
+import { Thread, User } from "../models/ChatSchema.js";
+
+import bcrypt from "bcrypt";
+import { z } from "zod";
 export const chatRouter = express.Router();
+const UserSchema = z.object({
+  email: z.string().min(4),
+  password: z.string().max(50).min(5),
+});
+chatRouter.post("/signup", async (req, res) => {
+  const result = UserSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.json({
+      msg: "Enter valid inputs",
+    });
+  }
+  const { email, password } = result.data;
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return res.json({
+      msg: "User already exists!",
+    });
+  }
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({ email: email, password: hashedPassword });
+    res.json({
+      msg: "Added to DB",
+      user: user,
+    });
+  } catch (error) {
+    res.json({
+      msg: "Error",
+      eror: error,
+    });
+    console.log(error);
+  }
+});
+chatRouter.post("/login", async (req, res) => {
+  const result = UserSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.json({
+      msg: "Enter valid inputs",
+    });
+  }
+  
+});
 chatRouter.post("/thread", async (req, res) => {
   const { title, id } = req.body;
   try {
@@ -123,23 +168,22 @@ chatRouter.post("/chat", async (req, res) => {
         title: message,
         messages: [{ role: "user", content: message }],
       });
-    }else{
-        thread.messages.push({role : "user", content :message})
+    } else {
+      thread.messages.push({ role: "user", content: message });
     }
-    const aiResponse =await getAiGeneratedMessage(message);
+    const aiResponse = await getAiGeneratedMessage(message);
     console.log(aiResponse);
-    thread.messages.push({role :"assistant", content : aiResponse})
-    console.log("pushed");
+    thread.messages.push({ role: "assistant", content: aiResponse });
+
     await thread.save();
-    console.log("saved");
     res.json({
       response: aiResponse,
       msg: "AI generated response",
     });
   } catch (error) {
     res.status(500).json({
-        msg : "Error",
-        error : error
-    })
+      msg: "Error",
+      error: error,
+    });
   }
 });

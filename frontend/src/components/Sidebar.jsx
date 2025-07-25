@@ -8,6 +8,12 @@ export default function Sidebar() {
     setData(response);
   return (
     <div className="w-full h-full rounded-lg bg-zinc-900 p-2 space-y-2">
+      <div 
+      onClick={()=>{
+        setId(Math.floor(Math.random()*10000 )+1);
+      }}
+         className="w-full px-4 py-3 text-sm text-white bg-zinc-800 rounded-lg hover:bg-zinc-700 cursor-pointer transition-colors"
+      >New Chat</div>
       {data.map((res) => (
         <div
           onClick={() => {

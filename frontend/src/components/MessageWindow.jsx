@@ -10,8 +10,10 @@ export default function MessageWindow() {
   console.log(foundMsg);
   if (!foundMsg || !foundMsg.messages) {
     return (
-      <div className="h-full bg-zinc-900 p-4 rounded-lg text-white">
-        No messages yet. Select a thread.
+      <div className="h-full flex flex-col bg-zinc-900 rounded-lg shadow-lg">
+        <div className="p-4  max border-t border-zinc-700 bg-zinc-900 top-145 relative">
+          <InputBox />
+        </div>
       </div>
     );
   }
@@ -36,7 +38,7 @@ export default function MessageWindow() {
         ))}
       </div>
 
-      <div className="p-4 border-t border-zinc-700 bg-zinc-900">
+      <div className="p-4 rounded-2xl border-t border-zinc-700 bg-zinc-900">
         <InputBox />
       </div>
     </div>
