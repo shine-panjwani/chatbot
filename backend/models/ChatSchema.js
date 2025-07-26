@@ -15,9 +15,14 @@ const MessageSchema = new mongoose.Schema({
   },
 });
 const ThreadSchema = new mongoose.Schema({
+  user:{
+    type : mongoose.Schema.Types.ObjectId,
+    ref :"User",
+    required : true
+  },
   threadId: {
     type: Number,
-    unique: true,
+    // unique: true,
     required: true,
   },
   title: {

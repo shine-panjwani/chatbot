@@ -1,7 +1,8 @@
 import express from "express";
+import jwt from "jsonwebtoken";
 import { getAiGeneratedMessage } from "../utils/openAI.js";
 import { Thread, User } from "../models/ChatSchema.js";
-
+import authMiddleware from "../middlewares/middleware.js";
 import bcrypt from "bcrypt";
 import { z } from "zod";
 export const chatRouter = express.Router();
@@ -45,9 +46,38 @@ chatRouter.post("/login", async (req, res) => {
       msg: "Enter valid inputs",
     });
   }
-  
+  const { email, password } = result.data;
+  const existingUser = await User.findOne({ email });
+  if (!existingUser) {
+    return res.json({
+      msg: "Invalid email",
+    });
+  }
+  const unHashedPassword = await bcrypt.compare(
+    password,
+    existingUser.password
+  );
+  if (!unHashedPassword) {
+    return res.json({
+      msg: "Incorrect password",
+    });
+  }
+  const token = jwt.sign(
+    { id: existingUser._id },
+    process.env.JWT_SECRET
+  );
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: false, // Must be true on HTTPS
+    sameSite :"lax"
+  });
+  res.json({
+    msg: "Logged in!!",
+    token: token,
+    ab: req.headers,
+  });
 });
-chatRouter.post("/thread", async (req, res) => {
+chatRouter.post("/thread",authMiddleware, async (req, res) => {
   const { title, id } = req.body;
   try {
     const response = await Thread.create({ threadId: id, title: title });
@@ -60,9 +90,9 @@ chatRouter.post("/thread", async (req, res) => {
     });
   }
 });
-chatRouter.get("/thread", async (req, res) => {
+chatRouter.get("/thread",authMiddleware, async (req, res) => {
   try {
-    const response = await Thread.find({}).sort({ updatedAt: -1 });
+    const response = await Thread.find({user : req.userId}).sort({ updatedAt: -1 });
     console.log(response);
     // console.log(Thread.modelName);
 
@@ -77,13 +107,14 @@ chatRouter.get("/thread", async (req, res) => {
     });
   }
 });
-chatRouter.get("/thread/:threadId", async (req, res) => {
+chatRouter.get("/thread/:threadId", authMiddleware,async (req, res) => {
   const id = Number(req.params.threadId);
   console.log(id);
 
   try {
     const response = await Thread.findOne({
       threadId: id,
+      user : req.userId
     });
     console.log(response);
 
@@ -100,12 +131,12 @@ chatRouter.get("/thread/:threadId", async (req, res) => {
     });
   }
 });
-chatRouter.delete("/thread/:threadId", async (req, res) => {
+chatRouter.delete("/thread/:threadId",authMiddleware, async (req, res) => {
   const threadId = Number(req.params.threadId);
   console.log(threadId);
 
   try {
-    const deletedThread = await Thread.findOneAndDelete({ threadId: threadId });
+    const deletedThread = await Thread.findOneAndDelete({ threadId: threadId ,user :req.userId });
     console.log(deletedThread);
 
     if (!deletedThread) {
@@ -119,51 +150,17 @@ chatRouter.delete("/thread/:threadId", async (req, res) => {
     });
   }
 });
-// chatRouter.post("/chat", async (req, res) => {
-//   const { message, threadId } = req.body;
-//   console.log(req.body);
-
-//   if (!threadId || !message) {
-//     console.log("Insufficient data fields");
-//   }
-//   try {
-//   const thread = await Thread.findOne({threadId});
-//   console.log(thread);
-
-//   if(!thread){
-//     thread = new Thread({
-//         threadId,
-//         title : message,
-//         messages : [{role : "user", content : message}]
-//     })
-//   }else{
-//     thread.messages.push({role : "user",content : message})
-//   }
-//   const aiGeneratedResponse =await getAiGeneratedMessage(message);
-//   console.log(aiGeneratedResponse);
-
-//   thread.messages.push({role :"assistant" , content : aiGeneratedResponse});
-
-//   res.json({
-//     ans : aiGeneratedResponse
-//   })
-//     } catch (error) {
-//    res.status(500).json({
-//     error : error
-//    })
-//   }
-// });
-
-chatRouter.post("/chat", async (req, res) => {
+chatRouter.post("/chat",authMiddleware, async (req, res) => {
   const { threadId, message } = req.body;
   if (!threadId || !message) {
     // console.log("Insufficient data");
     return res.status(400).json({ msg: "Insufficient data" });
   }
   try {
-    let thread = await Thread.findOne({ threadId });
+    let thread = await Thread.findOne({ threadId,user: req.userId });
     if (!thread) {
       thread = await Thread.create({
+        user : req.userId,
         threadId: threadId,
         title: message,
         messages: [{ role: "user", content: message }],

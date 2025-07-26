@@ -7,18 +7,16 @@ export default function InputBox() {
   const { id, data, setData } = useContext(MessageContext);
   const [inputText, setInputText] = useState("");
   const debouncedValue = useDebounce(inputText);
-  // console.log(debouncedValue);
   async function onBtnClick() {
+    // setLoading(true);
+    if(!id) return;
     console.log(debouncedValue);
-    console.log(data);
-    // setData(prev =>[...prev,{role : "user", content : debouncedValue}])
     const res = await axios.post("http://localhost:3000/api/chat", {
       threadId: id,
       message: inputText,
     });
     console.log(res);
     
-    // setData(prev => [...prev, {role : "assistant",content : res.data.response}])
     setData((prevData)=>prevData.map((prev)=>
       prev.threadId === id?{
         ...prev, messages:[

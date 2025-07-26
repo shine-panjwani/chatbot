@@ -1,6 +1,7 @@
+import { useNavigate } from "react-router-dom";
 import { styles } from "./Navbar";
-import Login from "./Signin";
 export default function HeroSection() {
+  const navigate = useNavigate();
   return (
     <>
       <div className="flex justify-center items-center">
@@ -14,7 +15,9 @@ export default function HeroSection() {
             generate ideas, and answer anything — instantly.
           </p>
           <div className="flex justify-center gap-4 flex-wrap">
-            <button className={`${styles} bg-indigo-500`}>Start Chat</button>
+            <button onClick={()=>{
+              navigate("/login")
+            }} className={`${styles} bg-indigo-500`}>Start Chat</button>
             <button
               className={`hover:border-indigo-500 hover:text-indigo-400 ${styles}`}
             >
@@ -22,7 +25,6 @@ export default function HeroSection() {
             </button>
           </div>
         </div>
-        {/* <Login/> */}
       </div>
     </>
   );
